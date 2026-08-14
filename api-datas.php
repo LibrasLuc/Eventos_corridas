@@ -1,0 +1,1 @@
+<?php require_once 'config.php';require_login();header('Content-Type: application/json; charset=utf-8');if(guest()){echo '[]';exit;}$id=(int)($_GET['ignorar']??0);$q=db()->prepare("SELECT dia_ini,dia_fin,nome_evento FROM corrida WHERE dia_ini IS NOT NULL AND status='aprovada' AND id<>?");$q->execute([$id]);echo json_encode($q->fetchAll(),JSON_UNESCAPED_UNICODE);
