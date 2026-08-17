@@ -1,0 +1,87 @@
+AGENDA MUNICIPAL DE CORRIDAS — RESUMO DO SISTEMA
+================================================
+
+1. OBJETIVO
+
+O sistema Agenda Municipal de Corridas foi desenvolvido para cadastrar,
+organizar e acompanhar solicitações de corridas de rua. Convidados podem criar
+uma conta, cadastrar eventos, desenhar o percurso no mapa e acompanhar a análise.
+Organizadores e administradores podem revisar solicitações, aprovar ou negar
+eventos, solicitar alterações e acompanhar a documentação de alvará.
+
+2. TECNOLOGIAS UTILIZADAS
+
+- PHP 8.1 ou superior: regras do sistema, autenticação e páginas dinâmicas.
+- MySQL 8: armazenamento de usuários, corridas, histórico, avisos e alvarás.
+- PDO: conexão segura do PHP com o banco e execução de consultas preparadas.
+- HTML5: estrutura das páginas e formulários.
+- CSS3: identidade visual, responsividade e animações.
+- JavaScript: interações, mapas, pesquisa de endereços e tela de carregamento.
+- Leaflet: exibição e manipulação dos mapas.
+- OpenStreetMap: mapas e dados geográficos.
+- Nominatim: pesquisa e conversão de coordenadas em endereços.
+- Valhalla: cálculo do trajeto pelas ruas e caminhos disponíveis.
+- Flatpickr: seleção de datas nos formulários.
+
+3. FUNCIONALIDADES PRINCIPAIS
+
+- Login com diferentes níveis de acesso: convidado, organizador e administrador.
+- Cadastro do convidado com nome, telefone, endereço, e-mail e CPF usado como usuário.
+- Senhas protegidas com hash e sessão autenticada no servidor.
+- Proteção CSRF nos formulários.
+- Cadastro e acompanhamento de solicitações de corrida.
+- Registro das datas e dos horários de início e término.
+- Geração automática de protocolo.
+- Seleção de largada, chegada e pontos intermediários no mapa.
+- Cálculo e armazenamento do percurso.
+- Verificação de datas e conflitos entre eventos.
+- Histórico das avaliações e retornos da equipe.
+- Indeferimento automático de protocolos abertos ao atingir o limite de 90 dias.
+- Edição dos dados e da rota pelo criador, organizadores e administradores.
+- Barra visual com criação, análise, documentos necessários e conclusão.
+- Envio, substituição e avaliação dos documentos necessários em PDF.
+- Painel de usuários e aviso geral para administradores.
+- Interface adaptada para computadores e dispositivos móveis.
+- Codificação UTF-8/utf8mb4 para exibir corretamente os acentos.
+
+4. TELA DE CARREGAMENTO APÓS O LOGIN
+
+A tela de carregamento aparece somente depois de um login bem-sucedido ou após
+o convidado criar a conta e entrar automaticamente.
+
+Ao autenticar o usuário, o PHP grava na sessão o marcador temporário
+"show_login_loader". A página seguinte lê esse marcador, cria a tela sobre o
+conteúdo e o remove imediatamente da sessão. Dessa forma, a animação aparece
+uma única vez e não se repete durante a navegação normal.
+
+A parte visual é feita apenas com HTML e CSS. Ela contém um corredor animado,
+uma pista e uma linha de chegada sobre um fundo nas cores do sistema. O corredor
+é movimentado com animações CSS (keyframes) e fica virado para a direção da linha
+de chegada. Também existe uma alternativa estática para dispositivos configurados
+para reduzir animações.
+
+O JavaScript mantém a tela visível durante 3 segundos. Depois desse tempo,
+adiciona uma classe que produz o desaparecimento suave e remove o elemento da
+página. O conteúdo principal já fica carregado por trás da animação, evitando
+uma nova requisição ou um redirecionamento adicional.
+
+Arquivos envolvidos na tela de carregamento:
+
+- login.php: ativa o marcador depois do login.
+- cadastro-convidado.php: ativa o marcador após a criação da conta.
+- partials.php: monta a estrutura HTML da tela.
+- assets/style.css: define o desenho, as cores e as animações.
+- assets/app.js: controla os 3 segundos e a remoção da tela.
+
+5. BANCO DE DADOS
+
+O banco principal se chama "semej_corridas" e usa utf8mb4. As tabelas armazenam
+usuários, corridas, histórico das solicitações e avisos. O cadastro da corrida
+inclui período, categoria, organizador, coordenadas, percurso, situação, retorno
+da equipe e informações relacionadas ao alvará.
+
+6. OBSERVAÇÃO PARA PUBLICAÇÃO
+
+Antes de publicar o sistema, recomenda-se configurar HTTPS, usuário próprio do
+banco de dados, cópias de segurança, limites e política de anexos, registros de
+auditoria, serviço de e-mail e medidas de adequação à LGPD.

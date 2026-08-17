@@ -4,6 +4,11 @@ USE semej_corridas;
 CREATE TABLE usuario (
  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
  `user` VARCHAR(120) NOT NULL UNIQUE,
+ nome VARCHAR(180) NULL,
+ telefone VARCHAR(30) NULL,
+ endereco VARCHAR(255) NULL,
+ email VARCHAR(180) NULL,
+ cpf VARCHAR(11) NULL,
  senha_crip VARCHAR(255) NOT NULL,
  tipo_user ENUM('admin','organizador','convidado') NOT NULL DEFAULT 'convidado'
 ) ENGINE=InnoDB;
@@ -22,6 +27,8 @@ CREATE TABLE corrida (
  percurso_km DECIMAL(8,2) NOT NULL DEFAULT 0,
  dia_ini DATE NOT NULL,
  dia_fin DATE NOT NULL,
+ hora_ini TIME NULL,
+ hora_fin TIME NULL,
  status ENUM('enviada','em_analise','alteracao_solicitada','aprovada','rejeitada') NOT NULL DEFAULT 'enviada',
  retorno TEXT NULL,
  alvara_arquivo VARCHAR(255) NULL,

@@ -11,17 +11,17 @@ if(!$event||guest()&&(int)$event['usuario_id']!==(int)$_SESSION['user']['id']){h
 
 $action=$_POST['permit_action']??'';
 if($action==='reject'){
-    if(!reviewer()){http_response_code(403);exit('Somente a equipe pode indeferir o alvará.');}
+    if(!reviewer()){http_response_code(403);exit('Somente a equipe pode indeferir documentos.');}
     $reason=trim($_POST['motivo']??'');
     if($reason===''){flash('error','Informe o motivo do indeferimento.');header('Location:solicitacao.php?id='.$id);exit;}
     db()->prepare("UPDATE corrida SET alvara_status='indeferido',alvara_motivo=?,alvara_enviado_em=NULL WHERE id=?")->execute([$reason,$id]);
-    db()->prepare("INSERT INTO solicitacao_historico(corrida_id,usuario_id,status,mensagem) VALUES(?,?,?,?)")->execute([$id,$_SESSION['user']['id'],$event['status'],'Alvará indeferido: '.$reason]);
-    flash('error','Alvará indeferido. O responsável poderá substituir o anexo.');header('Location:solicitacao.php?id='.$id);exit;
+    db()->prepare("INSERT INTO solicitacao_historico(corrida_id,usuario_id,status,mensagem) VALUES(?,?,?,?)")->execute([$id,$_SESSION['user']['id'],$event['status'],'Documento indeferido: '.$reason]);
+    flash('error','Documento indeferido. O responsável poderá substituir o anexo.');header('Location:solicitacao.php?id='.$id);exit;
 }
 if($action==='confirm_without_file'){
     db()->prepare("UPDATE corrida SET alvara_arquivo=NULL,alvara_enviado_em=NOW(),alvara_usuario_id=?,alvara_status='confirmado_sem_anexo',alvara_motivo=NULL WHERE id=?")->execute([$_SESSION['user']['id'],$id]);
-    db()->prepare("INSERT INTO solicitacao_historico(corrida_id,usuario_id,status,mensagem) VALUES(?,?,?,'Entrega do alvará confirmada sem arquivo anexado.')")->execute([$id,$_SESSION['user']['id'],$event['status']]);
-    flash('success','Entrega do alvará confirmada sem anexo.');
+    db()->prepare("INSERT INTO solicitacao_historico(corrida_id,usuario_id,status,mensagem) VALUES(?,?,?,'Entrega da documentação confirmada sem arquivo anexado.')")->execute([$id,$_SESSION['user']['id'],$event['status']]);
+    flash('success','Entrega da documentação confirmada sem anexo.');
     header('Location:solicitacao.php?id='.$id);exit;
 }
 
@@ -37,8 +37,8 @@ else{
         $name=preg_replace('/[^A-Za-z0-9_-]/','_',$event['protocolo']).'-'.bin2hex(random_bytes(4)).'.pdf';
         if(move_uploaded_file($file['tmp_name'],$directory.'/'.$name)){
             db()->prepare("UPDATE corrida SET alvara_arquivo=?,alvara_enviado_em=NOW(),alvara_usuario_id=?,alvara_status='enviado',alvara_motivo=NULL WHERE id=?")->execute(['uploads/alvaras/'.$name,$_SESSION['user']['id'],$id]);
-            db()->prepare("INSERT INTO solicitacao_historico(corrida_id,usuario_id,status,mensagem) VALUES(?,?,?,'Alvará enviado e anexado em PDF.')")->execute([$id,$_SESSION['user']['id'],$event['status']]);
-            flash('success','Alvará anexado ou substituído e salvo no protocolo.');
+            db()->prepare("INSERT INTO solicitacao_historico(corrida_id,usuario_id,status,mensagem) VALUES(?,?,?,'Documento necessário enviado e anexado em PDF.')")->execute([$id,$_SESSION['user']['id'],$event['status']]);
+            flash('success','Documento anexado ou substituído e salvo no protocolo.');
         }else flash('error','Não foi possível salvar o arquivo.');
     }
 }

@@ -1,6 +1,7 @@
 <?php
 require_once 'partials.php';
 require_login();
+reject_expired_open_protocols();
 
 $allowedTabs = ['geral', 'pendentes', 'aprovadas', 'negadas'];
 $tab = $_GET['aba'] ?? 'geral';
@@ -86,4 +87,3 @@ page_top('Solicitações');
 <?php if(!$events):?><section class="card empty-state"><div>⌕</div><h3>Nenhum resultado encontrado</h3><p>Tente pesquisar outro protocolo ou consulte uma aba diferente.</p><?php if($search!==''):?><a class="btn secondary" href="?aba=<?=$tab?>">Limpar pesquisa</a><?php endif;?></section><?php endif;?>
 </div>
 <?php page_bottom();?>
-
