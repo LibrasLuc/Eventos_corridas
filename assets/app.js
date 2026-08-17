@@ -1,6 +1,66 @@
 const date=document.querySelector('#date'),local=document.querySelector('#local'),box=document.querySelector('#availability');
 const loginLoader=document.querySelector('.login-loader');
 if(loginLoader)setTimeout(()=>{loginLoader.classList.add('leaving');document.body.classList.remove('login-loading');setTimeout(()=>loginLoader.remove(),450)},3000);
+const menuButton=document.querySelector('.menu-button'),mainNav=document.querySelector('#main-nav');
+const closeMenu=()=>{mainNav?.classList.remove('open');menuButton?.setAttribute('aria-expanded','false');menuButton?.setAttribute('aria-label','Abrir menu');};
+menuButton?.addEventListener('click',()=>{const open=!mainNav.classList.contains('open');mainNav.classList.toggle('open',open);menuButton.setAttribute('aria-expanded',String(open));menuButton.setAttribute('aria-label',open?'Fechar menu':'Abrir menu');});
+mainNav?.querySelectorAll('a').forEach(link=>link.addEventListener('click',closeMenu));
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMenu();});
+window.addEventListener('resize',()=>{if(window.innerWidth>800)closeMenu();});
+document.body.classList.add('enhanced-ui');
+
+// Tema visual persistente.
+const themeToggle=document.querySelector('.theme-toggle');
+const applyTheme=theme=>{document.documentElement.dataset.theme=theme;themeToggle?.setAttribute('aria-label',theme==='dark'?'Ativar tema claro':'Ativar tema escuro');};
+applyTheme(document.documentElement.dataset.theme||'light');
+themeToggle?.addEventListener('click',()=>{const theme=document.documentElement.dataset.theme==='dark'?'light':'dark';applyTheme(theme);try{localStorage.setItem('agenda-theme',theme)}catch(e){}});
+
+// Realça a página atual na navegação.
+const currentPage=location.pathname.split('/').pop()||'index.php';
+mainNav?.querySelectorAll('a').forEach(link=>{
+ const linkPage=new URL(link.href,location.href).pathname.split('/').pop();
+ if(linkPage===currentPage){link.classList.add('active');link.setAttribute('aria-current','page');}
+});
+
+// Alertas continuam acessíveis, mas podem ser dispensados sem recarregar a página.
+document.querySelectorAll('.alert').forEach(alert=>{
+ const close=document.createElement('button');close.type='button';close.className='alert-close';close.setAttribute('aria-label','Fechar aviso');close.textContent='×';
+ close.addEventListener('click',()=>{alert.classList.add('leaving');setTimeout(()=>alert.remove(),220)});alert.append(close);
+ if(alert.classList.contains('success'))setTimeout(()=>{if(alert.isConnected)close.click()},5000);
+});
+
+// Marca visualmente os cartões conforme o status exibido.
+document.querySelectorAll('.request-card').forEach(card=>{
+ const status=[...card.querySelector('.badge')?.classList||[]].find(name=>['enviada','em_analise','alteracao_solicitada','aprovada','rejeitada'].includes(name));
+ if(status)card.dataset.status=status;
+});
+
+// Feedback de envio evita a impressão de que o botão não respondeu.
+document.querySelectorAll('form').forEach(form=>form.addEventListener('submit',event=>{
+ if(event.defaultPrevented||!form.checkValidity())return;const button=event.submitter;
+ if(button?.classList.contains('btn')){button.classList.add('is-loading');button.setAttribute('aria-busy','true');button.dataset.label=button.textContent;button.textContent='Enviando…';}
+}));
+
+// Contadores discretos ajudam no preenchimento de descrições e retornos.
+document.querySelectorAll('textarea').forEach(field=>{
+ const counter=document.createElement('small');counter.className='field-counter';
+ const update=()=>counter.textContent=`${field.value.length} caracteres`;field.insertAdjacentElement('afterend',counter);field.addEventListener('input',update);update();
+});
+
+// Mostra imediatamente se a data escolhida atende à antecedência mínima.
+const deadlineField=document.querySelector('input[name="dia_ini"]');
+if(deadlineField){
+ const deadline=document.createElement('div');deadline.className='deadline-hint';deadlineField.insertAdjacentElement('afterend',deadline);
+ const updateDeadline=()=>{if(!deadlineField.value){deadline.textContent='';deadline.className='deadline-hint';return;}const selected=new Date(`${deadlineField.value}T00:00:00`),today=new Date();today.setHours(0,0,0,0);const days=Math.round((selected-today)/86400000);deadline.textContent=days>=90?`✓ Prazo atendido: ${days} dias de antecedência.`:`⚠ ${days} dias de antecedência: a solicitação irá para Negadas.`;deadline.className=`deadline-hint ${days>=90?'ok':'warning'}`;};
+ deadlineField.addEventListener('change',updateDeadline);updateDeadline();
+}
+
+// Entrada suave apenas quando há suporte e animações estão habilitadas.
+const animatedItems=document.querySelectorAll('.summary-cards article,.request-card,.timeline article,.form-section,.event-detail');
+if('IntersectionObserver' in window&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+ const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('in-view');observer.unobserve(entry.target)}}),{threshold:.08});
+ animatedItems.forEach(item=>{item.classList.add('reveal-item');observer.observe(item)});
+}else animatedItems.forEach(item=>item.classList.add('in-view'));
 document.querySelectorAll('.cpf-input').forEach(input=>input.addEventListener('input',()=>{const value=input.value.replace(/\D/g,'').slice(0,11);input.value=value.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2')}));
 const adminRole=document.querySelector('form.admin-form select[name="tipo_user"]');if(adminRole&&!adminRole.querySelector('option[value="convidado"]'))adminRole.prepend(new Option('Convidado','convidado',true,true));
 document.querySelectorAll('.user-actions select[name="tipo_user"]').forEach(select=>{if(!select.querySelector('option[value="convidado"]'))select.prepend(new Option('Convidado','convidado'));});

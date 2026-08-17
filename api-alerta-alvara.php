@@ -1,7 +1,6 @@
 <?php
 require_once 'config.php';
 require_login();
-reject_expired_open_protocols();
 header('Content-Type: application/json; charset=utf-8');
 
 $sql = "SELECT id,protocolo,nome_evento,dia_ini,DATEDIFF(dia_ini,CURDATE()) dias

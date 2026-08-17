@@ -36,7 +36,7 @@ eventos, solicitar alterações e acompanhar a documentação de alvará.
 - Cálculo e armazenamento do percurso.
 - Verificação de datas e conflitos entre eventos.
 - Histórico das avaliações e retornos da equipe.
-- Indeferimento automático de protocolos abertos ao atingir o limite de 90 dias.
+- Solicitações com menos de 90 dias de antecedência são registradas diretamente em Negadas; exatamente 90 dias é aceito.
 - Edição dos dados e da rota pelo criador, organizadores e administradores.
 - Barra visual com criação, análise, documentos necessários e conclusão.
 - Envio, substituição e avaliação dos documentos necessários em PDF.

@@ -1,8 +1,6 @@
 <?php
 require_once 'partials.php';
 require_login();
-reject_expired_open_protocols();
-
 $allowedTabs = ['geral', 'pendentes', 'aprovadas', 'negadas'];
 $tab = $_GET['aba'] ?? 'geral';
 if (!in_array($tab, $allowedTabs, true)) $tab = 'geral';

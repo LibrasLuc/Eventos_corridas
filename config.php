@@ -67,14 +67,6 @@ function valid_cpf(string $value): bool {
     }
     return true;
 }
-function reject_expired_open_protocols(): void {
-    $query=db()->query("SELECT id,usuario_id FROM corrida WHERE status IN ('enviada','em_analise','alteracao_solicitada') AND dia_ini<=DATE_ADD(CURDATE(),INTERVAL 90 DAY)");
-    $events=$query->fetchAll();
-    if(!$events)return;
-    $update=db()->prepare("UPDATE corrida SET status='rejeitada',retorno='Protocolo indeferido automaticamente por atingir o limite mínimo de 90 dias.' WHERE id=? AND status IN ('enviada','em_analise','alteracao_solicitada')");
-    $history=db()->prepare("INSERT INTO solicitacao_historico(corrida_id,usuario_id,status,mensagem) VALUES(?,NULL,'rejeitada','Protocolo indeferido automaticamente por atingir o limite mínimo de 90 dias.')");
-    foreach($events as $event){$update->execute([$event['id']]);if($update->rowCount())$history->execute([$event['id']]);}
-}
 function logged(): bool { return isset($_SESSION['user']); }
 function internal(): bool { return ($_SESSION['user']['tipo_user'] ?? '') === 'admin'; }
 function reviewer(): bool { return in_array($_SESSION['user']['tipo_user'] ?? '', ['admin','organizador'], true); }

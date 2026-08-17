@@ -30,10 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conflict = db()->prepare("SELECT nome_evento FROM corrida WHERE dia_ini<=? AND dia_fin>=? AND status='aprovada' AND id<>? LIMIT 1");
         $conflict->execute([$end, $start, $editId]);
         $occupied = $conflict->fetch();
-        $withinNinetyDays = $start <= date('Y-m-d', strtotime('+90 days'));
+        $belowNinetyDays = $start < date('Y-m-d', strtotime('+90 days'));
         $reasons = [];
         if ($occupied) $reasons[] = 'Já existe uma corrida aprovada neste período: '.$occupied['nome_evento'].'.';
-        if ($withinNinetyDays) $reasons[] = 'A corrida foi solicitada com antecedência de 90 dias ou menos.';
+        if ($belowNinetyDays) $reasons[] = 'A corrida foi solicitada com antecedência inferior a 90 dias.';
         $status = $reasons ? 'rejeitada' : 'enviada';
         $reason = $reasons ? implode(' ', $reasons) : null;
         $protocol = $event['protocolo'] ?? new_protocol();
@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = $editId ? 'Dados e trajeto da corrida atualizados.' : ($reason ?: 'Solicitação enviada para avaliação.');
         db()->prepare('INSERT INTO solicitacao_historico(corrida_id,usuario_id,status,mensagem) VALUES(?,?,?,?)')->execute([$id,$_SESSION['user']['id'],$status,$message]);
         $flashError=!$editId&&!empty($reasons);
-        flash($flashError?'error':'success',($editId?'Corrida atualizada com sucesso.':($reasons?'Solicitação automaticamente negada; a equipe pode aprovar como exceção.':'Solicitação enviada.')).' Protocolo: '.$protocol);
+        flash($flashError?'error':'success',($editId?'Corrida atualizada com sucesso.':($reasons?'Solicitação registrada e encaminhada para Negadas; a equipe pode aprovar como exceção.':'Solicitação enviada para análise.')).' Protocolo: '.$protocol);
         header('Location: solicitacao.php?id='.$id); exit;
     }
 }
@@ -66,7 +66,7 @@ page_top($editId ? 'Editar solicitação' : 'Cadastrar corrida');
 <section class="page-title"><div><span class="eyebrow">SOLICITAÇÃO</span><h1><?= $editId?'Editar e reenviar':'Nova corrida' ?></h1><p>Todas as datas futuras podem ser solicitadas. As regras serão verificadas após o envio.</p></div></section>
 <?php if($error):?><div class="alert error"><?=e($error)?></div><?php endif;?>
 <form method="post" class="form-grid"><input type="hidden" name="csrf" value="<?=csrf()?>"><input type="hidden" name="id" value="<?=$editId?>"><input type="hidden" id="routeJson" name="trajeto_json" value='<?=e($_POST['trajeto_json']??$event['trajeto_json']??'')?>'>
-<section class="card form-section"><div class="section-number">01</div><h2>Dados</h2><div class="fields"><label class="wide">Nome do evento<input name="nome_evento" required value="<?=$value('nome_evento')?>"></label><label>Categoria<input name="categoria" required value="<?=$value('categoria')?>" placeholder="Ex.: 5 km, 10 km, meia maratona, corrida infantil"></label><label>Organizador<input name="organizador" required value="<?=$value('organizador')?:e($_SESSION['user']['user'])?>"></label><label>Dia inicial<input type="date" id="diaIni" name="dia_ini" min="<?=date('Y-m-d')?>" required value="<?=$value('dia_ini')?>"></label><label>Dia final<input type="date" id="diaFin" name="dia_fin" min="<?=date('Y-m-d')?>" required value="<?=$value('dia_fin')?>"></label><label>Hora de início<input type="time" name="hora_ini" required value="<?=$value('hora_ini')?>"></label><label>Hora de término<input type="time" name="hora_fin" required value="<?=$value('hora_fin')?>"></label><div class="availability wide">Solicitações abertas que atingirem o limite mínimo de 90 dias serão automaticamente indeferidas.</div><label class="wide">Descrição<textarea name="desc_corrida" rows="4" required><?=$value('desc_corrida')?></textarea></label></div></section>
+<section class="card form-section"><div class="section-number">01</div><h2>Dados</h2><div class="fields"><label class="wide">Nome do evento<input name="nome_evento" required value="<?=$value('nome_evento')?>"></label><label>Categoria<input name="categoria" required value="<?=$value('categoria')?>" placeholder="Ex.: 5 km, 10 km, meia maratona, corrida infantil"></label><label>Organizador<input name="organizador" required value="<?=$value('organizador')?:e($_SESSION['user']['user'])?>"></label><label>Dia inicial<input type="date" id="diaIni" name="dia_ini" min="<?=date('Y-m-d')?>" required value="<?=$value('dia_ini')?>"></label><label>Dia final<input type="date" id="diaFin" name="dia_fin" min="<?=date('Y-m-d')?>" required value="<?=$value('dia_fin')?>"></label><label>Hora de início<input type="time" name="hora_ini" required value="<?=$value('hora_ini')?>"></label><label>Hora de término<input type="time" name="hora_fin" required value="<?=$value('hora_fin')?>"></label><div class="availability wide">O prazo mínimo é de 90 dias. Solicitações abaixo desse prazo serão registradas diretamente em Negadas.</div><label class="wide">Descrição<textarea name="desc_corrida" rows="4" required><?=$value('desc_corrida')?></textarea></label></div></section>
 <section class="card form-section"><div class="section-number">02</div><h2>Trajeto em Divinópolis</h2><p class="map-help">Marque largada, pontos de passagem e chegada.</p><div id="routePicker" class="map" data-start="<?=$value('local_ini')?>" data-end="<?=$value('local_fin')?>" data-route='<?=e($_POST['trajeto_json']??$event['trajeto_json']??'')?>'></div><div id="routeStatus" class="availability">Aguardando os pontos.</div><div class="fields"><label>Largada<input id="localIni" name="local_ini" readonly required value="<?=$value('local_ini')?>"></label><label>Chegada<input id="localFin" name="local_fin" readonly required value="<?=$value('local_fin')?>"></label><div class="wide"><button type="button" class="btn secondary" id="resetRoute">Refazer marcações</button></div></div></section>
 <aside class="submit-bar"><p><b>Enviar para avaliação</b><br><span>Um protocolo único será gerado.</span></p><button class="btn primary">Enviar solicitação →</button></aside></form>
 <script>window.EDIT_REQUEST_ID=<?=$editId?>;</script><?php page_bottom();?>
