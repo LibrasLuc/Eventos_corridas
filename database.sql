@@ -1,4 +1,5 @@
-CREATE DATABASE IF NOT EXISTS semej_corridas CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+DROP DATABASE IF EXISTS semej_corridas;
+CREATE DATABASE semej_corridas CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE semej_corridas;
 
 CREATE TABLE usuario (
@@ -50,7 +51,6 @@ CREATE TRIGGER corrida_protocolo_bi BEFORE INSERT ON corrida FOR EACH ROW
 BEGIN IF NEW.protocolo IS NULL OR NEW.protocolo='' THEN SET NEW.protocolo=CONCAT('COR-',YEAR(CURDATE()),'-',UPPER(HEX(RANDOM_BYTES(3)))); END IF; END//
 DELIMITER ;
 
--- Senhas: Admin@123 e Teste@123
+-- Super Admin (senha: Admin@123)
 INSERT INTO usuario(`user`,senha_crip,tipo_user) VALUES
-('admin','{SHA256}e86f78a8a3caf0b60d8e74e5942aa6d86dc150cd3c03338aef25b7d2d7e3acc7','admin'),
-('organizador','{SHA256}6b7a8a40eb42d9b6593930c0a4ca9946792e235709bc074ca056d9aefaa37b61','organizador');
+('admin','{SHA256}e86f78a8a3caf0b60d8e74e5942aa6d86dc150cd3c03338aef25b7d2d7e3acc7','admin');
