@@ -9,8 +9,14 @@ if ($editId) {
     $query = db()->prepare('SELECT * FROM corrida WHERE id=?');
     $query->execute([$editId]);
     $event = $query->fetch();
-    $canEdit = $event && (reviewer() || (int)$event['usuario_id']===(int)$_SESSION['user']['id']);
-    if (!$canEdit) { http_response_code(403); exit('Esta solicitação não pode ser editada.'); }
+    $isOwner = $event && (int)$event['usuario_id'] === (int)$_SESSION['user']['id'];
+    $canEdit = $event && (internal() || ($isOwner && $event['status'] !== 'aprovada'));
+    if (!$canEdit) {
+        http_response_code(403);
+        exit($event && $event['status'] === 'aprovada'
+            ? 'Após a conclusão, somente o Super Admin pode editar a corrida.'
+            : 'Você só pode editar as suas próprias corridas.');
+    }
 } elseif (!guest()) { http_response_code(403); exit('Use o cadastro interno para criar uma corrida.'); }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -42,9 +48,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($editId) {
             if ($event['status'] !== 'alteracao_solicitada') { $values[count($values)-2]=$event['status']; $values[count($values)-1]=$event['retorno']; }
-            array_push($values, $editId, $_SESSION['user']['id']);
-            array_pop($values);
-            db()->prepare('UPDATE corrida SET protocolo=?,nome_evento=?,local_ini=?,local_fin=?,categoria=?,desc_corrida=?,organizador=?,trajeto_json=?,percurso_km=?,dia_ini=?,dia_fin=?,hora_ini=?,hora_fin=?,status=?,retorno=? WHERE id=?')->execute($values);
+            $values[] = $editId;
+            $editCondition = '';
+            if (!internal()) {
+                $editCondition = " AND usuario_id=? AND status<>'aprovada'";
+                $values[] = $_SESSION['user']['id'];
+            }
+            $update = db()->prepare('UPDATE corrida SET protocolo=?,nome_evento=?,local_ini=?,local_fin=?,categoria=?,desc_corrida=?,organizador=?,trajeto_json=?,percurso_km=?,dia_ini=?,dia_fin=?,hora_ini=?,hora_fin=?,status=?,retorno=? WHERE id=?'.$editCondition);
+            $update->execute($values);
+            if ($update->rowCount() !== 1) {
+                $stillEditable = db()->prepare('SELECT 1 FROM corrida WHERE id=?'.$editCondition);
+                $checkValues = [$editId];
+                if (!internal()) $checkValues[] = $_SESSION['user']['id'];
+                $stillEditable->execute($checkValues);
+                if (!$stillEditable->fetchColumn()) { http_response_code(409); exit('A corrida foi concluída ou não pertence mais a você e não pode ser editada.'); }
+            }
             $status=$values[13];
             $id = $editId;
         } else {

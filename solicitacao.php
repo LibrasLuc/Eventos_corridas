@@ -30,10 +30,11 @@ $historyQuery=db()->prepare('SELECT h.*,u.`user` autor FROM solicitacao_historic
 $historyQuery->execute([$id]);$history=$historyQuery->fetchAll();
 $documentReady=!empty($ev['alvara_enviado_em'])&&$ev['alvara_status']!=='indeferido';
 $isApproved=$ev['status']==='aprovada';
+$canEdit=internal()||((int)$ev['usuario_id']===(int)$_SESSION['user']['id']&&!$isApproved);
 $progressStep=$isApproved?4:($documentReady?3:2);
 page_top('Andamento');
 ?>
-<section class="page-title"><div><span class="eyebrow">PROTOCOLO <?=e($ev['protocolo']??('#'.$id))?></span><h1><?=e($ev['nome_evento'])?></h1><p><span class="badge <?=e($ev['status'])?>"><?=e(str_replace('_',' ',$ev['status']))?></span> · <?=e($ev['solicitante']??$ev['organizador'])?></p></div><div class="page-actions"><a class="btn secondary" href="index.php">← Voltar</a><a class="btn secondary" href="novo-evento.php?id=<?=$id?>">Editar dados e rota</a><?php if(internal()):?><form method="post" onsubmit="return confirm('Excluir definitivamente este protocolo e todo o histórico?')"><input type="hidden" name="csrf" value="<?=csrf()?>"><input type="hidden" name="id" value="<?=$id?>"><input type="hidden" name="action" value="delete"><button class="btn danger">Excluir protocolo</button></form><?php endif;?></div></section>
+<section class="page-title"><div><span class="eyebrow">PROTOCOLO <?=e($ev['protocolo']??('#'.$id))?></span><h1><?=e($ev['nome_evento'])?></h1><p><span class="badge <?=e($ev['status'])?>"><?=e(str_replace('_',' ',$ev['status']))?></span> · <?=e($ev['solicitante']??$ev['organizador'])?></p></div><div class="page-actions"><a class="btn secondary" href="index.php">← Voltar</a><?php if($canEdit):?><a class="btn secondary" href="novo-evento.php?id=<?=$id?>">Editar dados e rota</a><?php endif;?><?php if(internal()):?><form method="post" onsubmit="return confirm('Excluir definitivamente este protocolo e todo o histórico?')"><input type="hidden" name="csrf" value="<?=csrf()?>"><input type="hidden" name="id" value="<?=$id?>"><input type="hidden" name="action" value="delete"><button class="btn danger">Excluir protocolo</button></form><?php endif;?></div></section>
 
 <ol class="race-progress" aria-label="Andamento da corrida"><li class="done"><i>1</i><span>Criação</span></li><li class="<?=$progressStep>=2?'done':''?>"><i>2</i><span>Validação e análise</span></li><li class="<?=$progressStep>=3?'done':''?>"><i>3</i><span>Documentos necessários</span></li><li class="<?=$isApproved?'done':''?>"><i>4</i><span>Conclusão</span></li></ol>
 
