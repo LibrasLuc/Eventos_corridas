@@ -9,6 +9,8 @@ if ($editId) {
     $query = db()->prepare('SELECT * FROM corrida WHERE id=?');
     $query->execute([$editId]);
     $event = $query->fetch();
+    // Convidados só podem alterar pedidos próprios ainda não concluídos. A equipe
+    // interna mantém acesso para corrigir solicitações durante a análise.
     $isOwner = $event && (int)$event['usuario_id'] === (int)$_SESSION['user']['id'];
     $canEdit = $event && (internal() || ($isOwner && $event['status'] !== 'aprovada'));
     if (!$canEdit) {
@@ -33,13 +35,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     elseif (!preg_match($coordinate, $_POST['local_ini'] ?? '') || !preg_match($coordinate, $_POST['local_fin'] ?? '')) $error = 'Marque largada e chegada no mapa.';
     elseif (!is_array($route) || !valid_route($route)) $error = 'O trajeto informado é inválido.';
     else {
+        // Dois períodos se cruzam quando um começa antes do término do outro.
+        // O próprio registro é ignorado para que a edição não conflite consigo mesma.
         $conflict = db()->prepare("SELECT nome_evento FROM corrida WHERE dia_ini<=? AND dia_fin>=? AND status='aprovada' AND id<>? LIMIT 1");
         $conflict->execute([$end, $start, $editId]);
         $occupied = $conflict->fetch();
         $belowNinetyDays = $start < date('Y-m-d', strtotime('+90 days'));
         $reasons = [];
         if ($occupied) $reasons[] = 'Já existe uma corrida aprovada neste período: '.$occupied['nome_evento'].'.';
-        if ($belowNinetyDays) $reasons[] = 'A corrida foi solicitada com antecedência inferior a 90 dias.';
+        if ($belowNinetyDays) $reasons[] = 'A solicitação deverá ser feita com 90 dias de antecedência.';
         $status = $reasons ? 'rejeitada' : 'enviada';
         $reason = $reasons ? implode(' ', $reasons) : null;
         $protocol = $event['protocolo'] ?? new_protocol();
@@ -47,6 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $values = [$protocol, trim($_POST['nome_evento']), trim($_POST['local_ini']), trim($_POST['local_fin']), trim($_POST['categoria']), trim($_POST['desc_corrida']), trim($_POST['organizador']), $routeJson, $distance, $start, $end, $startTime, $endTime, $status, $reason];
 
         if ($editId) {
+            // Uma edição comum não deve reabrir silenciosamente uma decisão já tomada.
+            // Só pedidos devolvidos para alteração voltam a passar pela regra automática.
             if ($event['status'] !== 'alteracao_solicitada') { $values[count($values)-2]=$event['status']; $values[count($values)-1]=$event['retorno']; }
             $values[] = $editId;
             $editCondition = '';
@@ -79,13 +85,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $value = fn(string $key) => e($_POST[$key] ?? $event[$key] ?? '');
+$organizerDefault = trim((string)($_SESSION['user']['nome'] ?? ''));
+if ($organizerDefault === '') {
+    $nameQuery = db()->prepare('SELECT nome FROM usuario WHERE id=?');
+    $nameQuery->execute([$_SESSION['user']['id']]);
+    $organizerDefault = trim((string)$nameQuery->fetchColumn());
+}
+if ($organizerDefault === '') $organizerDefault = (string)$_SESSION['user']['user'];
 page_top($editId ? 'Editar solicitação' : 'Cadastrar corrida');
 ?>
 <section class="page-title"><div><span class="eyebrow">SOLICITAÇÃO</span><h1><?= $editId?'Editar e reenviar':'Nova corrida' ?></h1><p>Todas as datas futuras podem ser solicitadas. As regras serão verificadas após o envio.</p></div></section>
 <?php if($error):?><div class="alert error"><?=e($error)?></div><?php endif;?>
 <form method="post" class="form-grid"><input type="hidden" name="csrf" value="<?=csrf()?>"><input type="hidden" name="id" value="<?=$editId?>"><input type="hidden" id="routeJson" name="trajeto_json" value='<?=e($_POST['trajeto_json']??$event['trajeto_json']??'')?>'>
-<section class="card form-section"><div class="section-number">01</div><h2>Dados</h2><div class="fields"><label class="wide">Nome do evento<input name="nome_evento" required value="<?=$value('nome_evento')?>"></label><label>Categoria<input name="categoria" required value="<?=$value('categoria')?>" placeholder="Ex.: 5 km, 10 km, meia maratona, corrida infantil"></label><label>Organizador<input name="organizador" required value="<?=$value('organizador')?:e($_SESSION['user']['user'])?>"></label><label>Dia inicial<input type="date" id="diaIni" name="dia_ini" min="<?=date('Y-m-d')?>" required value="<?=$value('dia_ini')?>"></label><label>Dia final<input type="date" id="diaFin" name="dia_fin" min="<?=date('Y-m-d')?>" required value="<?=$value('dia_fin')?>"></label><label>Hora de início<input type="time" name="hora_ini" required value="<?=$value('hora_ini')?>"></label><label>Hora de término<input type="time" name="hora_fin" required value="<?=$value('hora_fin')?>"></label><div class="availability wide">O prazo mínimo é de 90 dias. Solicitações abaixo desse prazo serão registradas diretamente em Negadas.</div><label class="wide">Descrição<textarea name="desc_corrida" rows="4" required><?=$value('desc_corrida')?></textarea></label></div></section>
+<section class="card form-section"><div class="section-number">01</div><h2>Dados</h2><div class="fields"><label class="wide">Nome do evento<input name="nome_evento" required value="<?=$value('nome_evento')?>"></label><label>Categoria<input name="categoria" required value="<?=$value('categoria')?>" placeholder="Ex.: 5 km, 10 km, meia maratona, corrida infantil"></label><label>Organizador<input name="organizador" required value="<?=$value('organizador')?:e($organizerDefault)?>"></label><label>Dia inicial<input type="date" id="diaIni" name="dia_ini" min="<?=date('Y-m-d')?>" required value="<?=$value('dia_ini')?>"></label><label>Dia final<input type="date" id="diaFin" name="dia_fin" min="<?=date('Y-m-d')?>" required value="<?=$value('dia_fin')?>"></label><label>Hora de início<input type="time" name="hora_ini" required value="<?=$value('hora_ini')?>"></label><label>Hora de término<input type="time" name="hora_fin" required value="<?=$value('hora_fin')?>"></label><div class="availability wide">A solicitação deverá ser feita com 90 dias de antecedência.</div><label class="wide">Descrição<textarea name="desc_corrida" rows="4" required><?=$value('desc_corrida')?></textarea></label></div></section>
 <section class="card form-section"><div class="section-number">02</div><h2>Trajeto em Divinópolis</h2><p class="map-help">Marque largada, pontos de passagem e chegada.</p><div id="routePicker" class="map" data-start="<?=$value('local_ini')?>" data-end="<?=$value('local_fin')?>" data-route='<?=e($_POST['trajeto_json']??$event['trajeto_json']??'')?>'></div><div id="routeStatus" class="availability">Aguardando os pontos.</div><div class="fields"><label>Largada<input id="localIni" name="local_ini" readonly required value="<?=$value('local_ini')?>"></label><label>Chegada<input id="localFin" name="local_fin" readonly required value="<?=$value('local_fin')?>"></label><div class="wide"><button type="button" class="btn secondary" id="resetRoute">Refazer marcações</button></div></div></section>
 <aside class="submit-bar"><p><b>Enviar para avaliação</b><br><span>Um protocolo único será gerado.</span></p><button class="btn primary">Enviar solicitação →</button></aside></form>
 <script>window.EDIT_REQUEST_ID=<?=$editId?>;</script><?php page_bottom();?>
-
