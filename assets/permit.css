@@ -44,8 +44,8 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: #fff0c7;
-  color: #a16a00;
+  background: var(--warning-soft);
+  color: #92400e;
   font: 800 25px Manrope;
 }
 
@@ -91,7 +91,7 @@ html[data-theme="dark"] .permit-today {
 .permit-today input {
   width: 17px;
   height: 17px;
-  accent-color: #24a5b8;
+  accent-color: var(--blue);
 }
 
 .permit-buttons {

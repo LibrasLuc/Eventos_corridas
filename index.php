@@ -72,7 +72,7 @@ page_top('Solicitações');
 <?php if($search!==''):?><p class="result-label"><b><?=count($events)?></b> resultado(s) para “<?=e($search)?>”</p><?php endif;?>
 <div class="request-grid">
 <?php foreach($events as $event):?>
-    <article class="card request-card">
+    <article class="card request-card" data-status="<?=e($event['status'])?>">
         <div class="request-main">
             <div class="request-meta"><span class="protocol"><?=e($event['protocolo']??'Sem protocolo')?></span><span class="badge <?=e($event['status'])?>"><?=e(str_replace('_',' ',$event['status']))?></span></div>
             <h3><?=e($event['nome_evento'])?></h3>

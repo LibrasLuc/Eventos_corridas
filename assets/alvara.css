@@ -2,7 +2,7 @@
 .permit-section {
   margin-bottom: 18px;
   padding: 22px;
-  border-left: 5px solid #e39136;
+  border-left: 5px solid var(--orange);
 }
 
 .permit-section h2 {
@@ -10,7 +10,7 @@
 }
 
 .permit-ok {
-  color: #247458;
+  color: #047857;
   font-weight: 700;
 }
 
@@ -40,8 +40,8 @@
   margin: 12px 0;
   padding: 14px;
   border-radius: 7px;
-  background: #fbe4e4;
-  color: #913b3b;
+  background: var(--danger-soft);
+  color: #b91c1c;
 }
 
 .permit-rejected p {
